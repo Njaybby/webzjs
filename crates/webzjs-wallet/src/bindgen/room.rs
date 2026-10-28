@@ -62,6 +62,16 @@ impl WebWallet {
         ))
     }
 
+    /// The account's unified full viewing key, encoded for this network, so room members can import the room as a view-only account.
+    pub async fn account_ufvk(&self, account_id: u32) -> Result<String, Error> {
+        let db = self.inner.db.read().await;
+        let account = db
+            .get_account(account_id.into())?
+            .ok_or(Error::AccountNotFound(account_id))?;
+        let ufvk = account.ufvk().ok_or(Error::AccountNotFound(account_id))?;
+        Ok(ufvk.encode(&self.inner.network))
+    }
+
     /// Every note the account received, with the paddle it was paid to and its memo.
     /// The compact scan carries neither, so each transaction is fetched whole and decrypted here.
     pub async fn room_notes(&self, account_id: u32) -> Result<JsValue, Error> {
