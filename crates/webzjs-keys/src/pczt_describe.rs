@@ -606,6 +606,7 @@ fn analyze(
         network: match network {
             Network::MainNetwork => "main".into(),
             Network::TestNetwork => "test".into(),
+            Network::Regtest => "regtest".into(),
         },
         outputs,
         total_in,

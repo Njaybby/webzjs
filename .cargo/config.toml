@@ -9,3 +9,5 @@ rustflags = ["-C", "target-feature=+atomics,+bulk-memory,+mutable-globals"]
 
 # [build]
 # target = "wasm32-unknown-unknown"
+[unstable]
+git = { shallow_index = true, shallow_deps = true }

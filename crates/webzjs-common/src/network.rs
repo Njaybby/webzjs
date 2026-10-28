@@ -14,6 +14,8 @@ pub enum Network {
     #[default]
     MainNetwork,
     TestNetwork,
+    /// A local chain with every upgrade through NU6.3 active from height 1, as a Zakura Regtest node runs it when NU7 is left unset.
+    Regtest,
 }
 
 impl FromStr for Network {
@@ -23,6 +25,7 @@ impl FromStr for Network {
         match s {
             "main" => Ok(Network::MainNetwork),
             "test" => Ok(Network::TestNetwork),
+            "regtest" => Ok(Network::Regtest),
             _ => Err(Error::InvalidNetwork(s.to_string())),
         }
     }
@@ -33,6 +36,7 @@ impl Parameters for Network {
         match self {
             Network::MainNetwork => zcash_protocol::consensus::NetworkType::Main,
             Network::TestNetwork => zcash_protocol::consensus::NetworkType::Test,
+            Network::Regtest => zcash_protocol::consensus::NetworkType::Regtest,
         }
     }
 
@@ -44,15 +48,7 @@ impl Parameters for Network {
             Network::TestNetwork => {
                 zcash_protocol::consensus::Network::TestNetwork.activation_height(nu)
             }
-        }
-    }
-}
-
-impl From<Network> for consensus::Network {
-    fn from(network: Network) -> Self {
-        match network {
-            Network::MainNetwork => consensus::Network::MainNetwork,
-            Network::TestNetwork => consensus::Network::TestNetwork,
+            Network::Regtest => Some(consensus::BlockHeight::from_u32(1)),
         }
     }
 }

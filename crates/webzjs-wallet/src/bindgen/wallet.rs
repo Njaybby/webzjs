@@ -97,7 +97,7 @@ pub type NoteRef = <MemoryWalletDb<Network> as InputSource>::NoteRef;
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct WebWallet {
-    inner: MemoryWallet<tonic_web_wasm_client::Client>,
+    pub(crate) inner: MemoryWallet<tonic_web_wasm_client::Client>,
 }
 
 impl WebWallet {

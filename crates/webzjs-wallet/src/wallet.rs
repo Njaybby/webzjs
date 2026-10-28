@@ -310,6 +310,19 @@ where
         to_address: ZcashAddress,
         value: u64,
     ) -> Result<Proposal<StandardFeeRule, NoteRef>, Error> {
+        let request = TransactionRequest::new(vec![Payment::without_memo(
+            to_address,
+            Zatoshis::from_u64(value)?,
+        )])?;
+        self.propose_request(account_id, request).await
+    }
+
+    /// Proposes a transaction paying every output of a ZIP 321 request, memos included.
+    pub async fn propose_request(
+        &self,
+        account_id: AccountId,
+        request: TransactionRequest,
+    ) -> Result<Proposal<StandardFeeRule, NoteRef>, Error> {
         let input_selector = GreedyInputSelector::new();
 
         let change_strategy = MultiOutputChangeStrategy::new(
@@ -323,10 +336,6 @@ where
                 Zatoshis::from_u64(self.min_split_output_value)?,
             ),
         );
-        let request = TransactionRequest::new(vec![Payment::without_memo(
-            to_address,
-            Zatoshis::from_u64(value)?,
-        )])?;
 
         tracing::info!("Chain height: {:?}", self.db.read().await.chain_height()?);
         tracing::info!(
@@ -368,6 +377,18 @@ where
         proposal: Proposal<StandardFeeRule, NoteRef>,
         usk: &UnifiedSpendingKey,
     ) -> Result<NonEmpty<TxId>, Error> {
+        self.create_proposed_transactions_with_ovk(proposal, usk, OvkPolicy::Sender)
+            .await
+    }
+
+    /// As `create_proposed_transactions`, with the outgoing viewing key policy chosen by the caller.
+    /// `OvkPolicy::Discard` makes the outputs unreadable to anyone holding the account's full viewing key.
+    pub async fn create_proposed_transactions_with_ovk(
+        &self,
+        proposal: Proposal<StandardFeeRule, NoteRef>,
+        usk: &UnifiedSpendingKey,
+        ovk_policy: OvkPolicy,
+    ) -> Result<NonEmpty<TxId>, Error> {
         let prover = LocalTxProver::bundled();
         let mut db = self.db.write().await;
         let transactions = create_proposed_transactions::<
@@ -383,7 +404,7 @@ where
             &prover,
             &prover,
             &SpendingKeys::from_unified_spending_key(usk.clone()),
-            OvkPolicy::Sender,
+            ovk_policy,
             &proposal,
             // client_backend 0.24 added an explicit expiry height; `None` keeps the
             // builder's default expiry behaviour.
